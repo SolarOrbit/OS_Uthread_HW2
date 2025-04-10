@@ -35,6 +35,8 @@ void thread_exit(void) {
 
 // 스케줄러 함수 (최종 버전)
 static void thread_schedule(void) {
+    printf(1, "[Sched START] current=0x%x state=%d\n", (int)current_thread, current_thread ? current_thread->state : -1);
+    //로그 임시 추가
     thread_p t, found_next = 0;
     int i;
     thread_p current_save = current_thread;
@@ -43,33 +45,41 @@ static void thread_schedule(void) {
 
     for (i = 0; i < MAX_THREAD; i++) {
         t = &all_thread[i];
+        // <<< 로그 추가: 각 스레드 상태 확인 >>>
+        if (t->state != FREE) { // 불필요한 로그 방지 위해 FREE 상태 제외
+            printf(1, "[Sched Check] Checking thread %d (0x%x), state=%d\n", i, (int)t, t->state);
+        }
         // 스레드 0(main)과 자기 자신을 제외하고 RUNNABLE 스레드 검색
-        if (t->state == RUNNABLE && t != current_save && t != &all_thread[0]) {
-            // printf(1, "  Found runnable thread %d (addr=0x%x)\n", i, (int)t);
+        if (t->state == RUNNABLE && t != current_save) {
+            // <<< 로그 추가: 실행할 다음 스레드 찾음 >>>
+			printf(1, "[Sched Found] Found runnable thread %d (addr=0x%x)\n", i, (int)t);// 로그 추가
             found_next = t;
             break;
         }
     }
 
     if (found_next != 0) {
+        printf(1, "[Sched Switch] Switching: current(0x%x) state->RUNNABLE, next(0x%x) state->RUNNING\n", (int)current_save, (int)found_next); // 상태 변경 전 로그
         next_thread = found_next;
         // printf(1, "  Switching from 0x%x to 0x%x\n", (int)current_save, (int)next_thread);
         next_thread->state = RUNNING;
         if (current_save != 0 && current_save->state == RUNNING) {
             current_save->state = RUNNABLE;
         }
+        else if (current_save != 0) {
+            // 만약 현재 스레드 상태가 RUNNING이 아니라면 로그 남기기 (디버깅용)
+            printf(1, "[Sched WARN] current_save(0x%x) state was %d, not RUNNING, when switching\n", (int)current_save, current_save->state);
+        } //임시 로그 추가
         thread_switch();
     }
     else {
-        if (current_save != 0 && current_save->state == RUNNING) {
-            // printf(1, "  No other runnable thread found, resuming current 0x%x\n", (int)current_save);
-            next_thread = 0;
-        }
-        else {
-            printf(2, "thread_schedule: no runnable threads\n"); // 최종 종료 메시지
+        printf(1, "[Sched NoSwitch] No other runnable thread found. Resuming 0x%x\n", (int)current_save);
+        if (current_save == 0 || current_save->state == FREE) { // 또는 종료 상태 등
+            printf(2, "thread_schedule: no runnable threads\n");
             exit();
         }
     }
+    printf(1, "[Sched END]\n");
 }
 
 // 스레드 시스템 초기화 함수
@@ -105,10 +115,11 @@ void thread_create(void (*func)()) {
 // 스레드 실행 함수 (thread_exit 호출)
 static void mythread(void) {
     int i;
-    int my_addr = (int)current_thread;
+    //int my_addr = (int)current_thread;
     // printf(1, "my thread 0x%x running\n", my_addr); // 필요시 로그 활성화
     for (i = 0; i < 100; i++) { // 루프 횟수 원복 (또는 적절히 조절)
-        printf(1, "my thread 0x%x\n", my_addr);
+        //printf(1, "my thread 0x%x\n", my_addr); 임시로 주석처리
+        printf(1, "my thread 0x%x loop %d\n", (int)current_thread, i);
     }
     printf(1, "my thread: exit\n"); // 주소 없이 출력
     thread_exit(); // 정상 종료 처리

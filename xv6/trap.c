@@ -82,7 +82,7 @@ trap(struct trapframe* tf)
                 // 이후 프로세스 종료 여부 확인은 여전히 필요.
 
                 // 디버깅 로그 (필요시 유지)
-                // cprintf("KERN_INFO: trap.c: Saved EIP 0x%x to user_esp 0x%x, jumping to scheduler 0x%x\n", original_eip, tf->esp, tf->eip);
+                cprintf("KERN_INFO: trap.c: Saved EIP 0x%x to user_esp 0x%x, jumping to scheduler 0x%x\n", original_eip, tf->esp, tf->eip);
 
                 // ★★★★★: 사용자 스케줄러로 점프하므로 아래의 kernel yield 로직 실행 방지 ★★★★★
                 goto check_exit; // 아래의 yield 건너뛰고 종료 확인으로 이동 (아래 check_exit 레이블 추가 필요)
